@@ -10,6 +10,9 @@
 #define MS_TO_S 1000
 #define MIN_TO_S 60
 
+#define RETR_NUM_K 1
+#define HOP_NUM_N 2
+
 // MAC Address of responder/receiver/slave - edit as required
 // addr of r1 = 0x0C,0xB8,0x15,0xD7,0x76,0xD4
 
@@ -88,7 +91,7 @@ void setup() {
   myData.time3 = 3.0;
   myData.dist4 = 4.0;
   myData.time4 = 4.0;
-  myData.time_to_live = 2;
+  myData.time_to_live = HOP_NUM_N;
 }
 
 // ------- LOOP --------------------------------------------------
@@ -107,14 +110,19 @@ void loop() {
 
     Serial.print("\nSENDING ...\n");
     // Serial.printf("%lu\t", millis());
-    esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
-    delay(1);
+    // esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // delay(1);
 
-    esp_err_t result2 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
-    delay(1);
+    // esp_err_t result2 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // delay(1);
 
-    esp_err_t result3 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // esp_err_t result3 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
     // Serial.printf("%lu\n", millis());
+    for (int i=0; i<RETR_NUM_K; i++){
+      esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+      delay(1);
+    }
+
 
     myData.dist1++;
     myData.time1++;
@@ -126,7 +134,7 @@ void loop() {
     myData.time4++;
 
     // // waiting time...
-    delay(TIME_PERIOD * S_TO_MS - 2);
+    delay(TIME_PERIOD * S_TO_MS - RETR_NUM_K);
     // delay(TIME_PERIOD * S_TO_MS);
 
     tx++;
@@ -140,18 +148,23 @@ void loop() {
     myData.packetNumber = 0;
 
     Serial.print("\n SENDING SPECIAL packet ...\n");
-    esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
-    delay(1);
+    // esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // delay(1);
 
-    esp_err_t result2 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
-    delay(1);
+    // esp_err_t result2 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // delay(1);
 
-    esp_err_t result3 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+    // esp_err_t result3 = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+
+    for (int i=0; i<RETR_NUM_K; i++){
+      esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
+      delay(1);
+    }
 
     // waiting time...
 
     if (stx != SPECIAL_COUNT) {
-      delay(TIME_PERIOD * S_TO_MS - 2);
+      delay(TIME_PERIOD * S_TO_MS - RETR_NUM_K);
     }
   }
 

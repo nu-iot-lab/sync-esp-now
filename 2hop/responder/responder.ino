@@ -74,7 +74,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         }
         else
         {
-            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - after_rx_ms - radio_ready_ms + clock_correction - 2) * MS_TO_US);
+            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - after_rx_ms - radio_ready_ms + clock_correction - RETR_NUM_K) * MS_TO_US);
         }
     }
 

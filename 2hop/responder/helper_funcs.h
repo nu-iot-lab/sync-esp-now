@@ -5,6 +5,8 @@
 
 #define TOTAL_PKTS 500
 
+#define RETR_NUM_K 1
+
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int packetReceived = 0;
 RTC_DATA_ATTR int MISS_COUNT = 0;
@@ -26,8 +28,8 @@ unsigned long start_time = 0;
 int got_packet = 0;
 int clock_correction = 0;
 int rcv_done = 0;
-int hopping = 0;
-int retr = 0;
+int hopping = 0; // pkt from ed
+int retr = 0; // pkt needs to be forwarded
 int is_repeated = 0;
 int rx_time = 0;
 
@@ -101,9 +103,9 @@ void retransmit()
     // this takes approx. 12 ms
     //    Serial.println("retransmitting...");
     esp_wifi_start();
-    myData.time_to_live = 1;
+    // myData.time_to_live = 1;
 
-    for (int i=0; i<3; i++){
+    for (int i=0; i<RETR_NUM_K; i++){
       esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&myData, sizeof(myData));
       delay(1);
     }
