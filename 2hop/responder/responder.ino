@@ -1,4 +1,4 @@
-// authors: Yermakhan Magzym, Dimitrios Zorbas
+// authors: Yermakhan Magzym, Dimitrios Zorbas, Aida Eduard
 
 #include <esp_wifi.h>
 #include <esp_now.h>
@@ -9,27 +9,27 @@
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-    rx_time = micros() - start_time;
-    Serial.printf("Received at %f ms\n", rx_time/1000.0); // it must be RADIO_READY+30
+    esp_wifi_stop();
+    rx_time = micros();
+    Serial.printf("Received after %f ms\n", (rx_time-start_time)/1000.0); // it must be RADIO_READY+GUARD_TIME
     got_packet = 1;
     rcv_done = 0;
     if (bootCount == 1 && MISS_COUNT != 0){
-      clock_correction = 0;
+        clock_correction = 0;
     }else if (bootCount > 1 && MISS_COUNT == 0){
-      unsigned long delta = micros() - start_time - RADIO_READY*1000 - del; // this is how long the device waited with radio on until it received the beacon
-      clock_correction = int(delta/1000.0 - GUARD_TIME);
+        unsigned long delta = micros() - start_time - RADIO_READY*1000 - del*1000; // this is how long the device waited with radio on until it received the beacon
+        clock_correction = int(delta/1000.0 - GUARD_TIME);
+        if (clock_correction > OVERHEAD)
+            clock_correction = 0;
     }
 
     packetReceived++;
     memcpy(&p, incomingData, sizeof(p));
 
     // repeated packets
-    if (p.packetNumber != previous_packet)
-    {
+    if (p.packetNumber != previous_packet){
         previous_packet = p.packetNumber;
-    }
-    else
-    {
+    }else{
         packetReceived--;
         got_packet = 0;
         is_repeated = 1;
@@ -37,42 +37,21 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     }
 
     // check for special packet
-    if (p.packetNumber == 0)
-    {
+    if (p.packetNumber == 0){
         SpecialHandler();
         return;
     }
 
+    // reduce hop count
     p.ttl--;
-    if (p.ttl > 0)
-    {
+    if (p.ttl > 0){
         retr = 1;
         _PRIMARY_COUNT++;
     }
-    else
-    {
-        hopping = 1;
-    }
-
-//    esp_wifi_stop();
 
     // output stuff ...
     _RSSI_SUM += rssi_display;
     Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, clock_correction);
-    // Serial.printf("%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\n", p.time1, p.dist1, p.time2, p.dist2, p.time3, p.dist3, p.time4, p.dist4);
-
-    if ((MISS_COUNT == 0) && (bootCount != 1) && !KEEP_ON)
-    {
-        // Serial.printf("I will align the clock by %d ms\n", clock_correction);
-        if (hopping == 1)
-        {
-            esp_sleep_enable_timer_wakeup((period - AFTER_RX - RADIO_READY + clock_correction) * MS_TO_US);
-        }
-        else
-        {
-            esp_sleep_enable_timer_wakeup((period - AFTER_RX - RADIO_READY + clock_correction) * MS_TO_US);
-        }
-    }
 
     rcv_done = 1;
     KEEP_ON = 0;
@@ -82,6 +61,7 @@ void setup()
 {
     Serial.begin(115200);
     start_time = micros();
+    Serial.printf("---\n");
 
     // special packet check
     if (TURN_OFF)
@@ -129,53 +109,34 @@ void setup()
     // RSSI
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
-    Serial.printf("Radio ready at %f ms\n", (micros()-start_time)/1000.0);
 
-    // set default sleep time
-    esp_sleep_enable_timer_wakeup((period - RADIO_READY - AFTER_RX) * MS_TO_US);
+    // turn on wifi
     esp_wifi_start();
+    radio_on_time = micros();
+    Serial.printf("Radio ready after %f ms\n", (radio_on_time-start_time)/1000.0);
 }
 
 void loop()
 {
     // wait indefinetly (this is for the first time the device boots up)
-    if (bootCount == 1 || KEEP_ON)
-    {
-        while (!got_packet)
-        {
-            delay(1);
+    if (bootCount == 1 || KEEP_ON){
+        while (got_packet == 0){
+            delay(0.001);
         }
     }
 
     // wait for the beacon
-    while ( (bootCount > 1) && ((micros() - start_time) < 3*radio_on_ms*MS_TO_US) )
-    {
-        delay(1);
+    while ( (bootCount > 1) && ((micros() - start_time) < 2*max_radio_on*MS_TO_US) ){
+        if (got_packet == 1)
+            break;
     }
 
-    if (!got_packet && !is_repeated)
-    {
-        //  if didn't get a packet, wait a bit for transmissions from other nodes
-        delay(10);
-        if (hopping == 1)
-        {
-            while (!rcv_done)
-            {
-                delay(1);
-            }
-            Serial.flush();
-            esp_deep_sleep_start();
-        }
-
+    if (got_packet == 0){
         MISS_COUNT++;
-        if (MISS_COUNT == 1)
-        {
-            esp_sleep_enable_timer_wakeup((period - RADIO_READY - 3*radio_on_ms)*MS_TO_US);
+        if (MISS_COUNT == 1){
             _TEMP_DESYNC++;
             Serial.printf("x\n");
-        }
-        else if (MISS_COUNT == 2)
-        {
+        }else if (MISS_COUNT == 2){
             // wake up way earlier
             esp_sleep_enable_timer_wakeup((period / 2) * MS_TO_US);
             Serial.printf("xx\n");
@@ -183,23 +144,26 @@ void loop()
             MISS_COUNT = 0;
             _FULL_DESYNC++;
         }
-    }
-    else // got packet
-    {
+    }else{ // got packet
         MISS_COUNT = 0;
         // wait for the rcvCallback to finish
-        while (!rcv_done)
-        {
-            delay(1);
+        while (rcv_done == 0){
+            delay(0.001);
         }
 
         // if got packet then retransmit
-        if (rcv_done && retr)
-        {
+        if (retr == 1){
             retransmit();
         }
     }
-    // Serial.printf("time since rx: %d\n", micros()-rx_time);
+//    Serial.printf("time since rx: %f ms\n", (micros()-rx_time)/1000);
+//    Serial.printf("time since wake-up: %f ms\n", (micros()-start_time)/1000);
+    if (bootCount > 1){
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME + clock_correction));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME + clock_correction) * MS_TO_US);
+    }else{
+        esp_sleep_enable_timer_wakeup((period - RADIO_READY - AFTER_RX) * MS_TO_US);
+    }
     Serial.flush();
     esp_deep_sleep_start();
 }
