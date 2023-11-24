@@ -16,7 +16,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     if (bootCount == 1 && MISS_COUNT != 0){
       clock_correction = 0;
     }else if (bootCount > 1 && MISS_COUNT == 0){
-      unsigned long delta = micros() - start_time - RADIO_READY*1000;
+      unsigned long delta = micros() - start_time - RADIO_READY*1000 - del; // this is how long the device waited with radio on until it received the beacon
       clock_correction = int(delta/1000.0 - GUARD_TIME);
     }
 
@@ -148,7 +148,7 @@ void loop()
     }
 
     // wait for the beacon
-    while ( (bootCount > 1) && ((micros() - start_time) < 2*radio_on_ms*MS_TO_US) )
+    while ( (bootCount > 1) && ((micros() - start_time) < 3*radio_on_ms*MS_TO_US) )
     {
         delay(1);
     }

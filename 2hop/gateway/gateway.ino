@@ -10,7 +10,7 @@
 #define SPECIAL_COUNT 10
 
 #define RETR_NUM_K 1
-#define HOP_NUM_N 2
+#define HOP_NUM_N 1
 #define TX_DELAY 1
 
 uint8_t broadcastAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
@@ -74,7 +74,7 @@ void setup() {
   }
   slaveInfo.channel = 14;
 
-  p.packetNumber = 0;
+  p.packetNumber = 1;
   p.ttl = HOP_NUM_N;
   p.id = 1;
   p.dist1 = 3000*rand()/1000;
@@ -88,7 +88,7 @@ void setup() {
 // ------- LOOP --------------------------------------------------
 
 void loop() {
-  while (p.packetNumber < MAX_TX_COUNT) {
+  while (p.packetNumber <= MAX_TX_COUNT) {
 
     Serial.print("\nSENDING ...\n");
     for (int i=0; i<RETR_NUM_K; i++){
@@ -102,7 +102,7 @@ void loop() {
 
     p.packetNumber++;
   }
-  
+  p.packetNumber = 0;
   int stx = 0;
   while (stx < SPECIAL_COUNT) {
 

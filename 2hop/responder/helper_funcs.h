@@ -2,7 +2,7 @@
 #define TIME_PERIOD_MS 5000
 
 #define TOTAL_PKTS 500
-#define HOP_NUM_N 2
+#define HOP_NUM_N 1
 #define RETR_NUM_K 1
 #define TX_DELAY 1
 #define RADIO_READY 20 // experimentally found
@@ -52,7 +52,7 @@ struct packet {
 };
 
 packet p;
-float del = RETR_NUM_K * sizeof(p) * 8.0 / 250 + RETR_NUM_K * TX_DELAY * 1.0;
+float del = RETR_NUM_K * sizeof(p) * 8.0 / 250 + (RETR_NUM_K-1) * TX_DELAY * 1.0;
 float period = TIME_PERIOD_MS - del;
 unsigned short int radio_on_ms = GUARD_TIME + HOP_NUM_N * (del + SWITCH_TIME + R);
 
