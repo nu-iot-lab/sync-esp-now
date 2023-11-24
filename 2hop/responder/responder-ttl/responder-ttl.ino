@@ -6,27 +6,31 @@
 #include "rssi.h"
 #include "helper_funcs.h"
 
+#define radio_ready_ms 20
+#define after_rx_ms 105
+#define guard_time_ms 35
+
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
     rx_time = micros() - start_time;
-    Serial.printf("Received at %f ms\n", rx_time/1000.0); // it must be RADIO_READY+30
+    // Serial.printf("Received at %f ms\n", rx_time/1000.0); // it must be radio_ready_ms+30
     got_packet = 1;
     rcv_done = 0;
     if (bootCount == 1 && MISS_COUNT != 0){
       clock_correction = 0;
     }else if (bootCount > 1 && MISS_COUNT == 0){
-      unsigned long delta = micros() - start_time - RADIO_READY*1000;
-      clock_correction = int(delta/1000.0 - GUARD_TIME);
+      unsigned long delta = micros() - start_time - radio_ready_ms*1000;
+      clock_correction = int(delta/1000.0 - guard_time_ms);
     }
 
     packetReceived++;
-    memcpy(&p, incomingData, sizeof(p));
+    memcpy(&myData, incomingData, sizeof(myData));
 
     // repeated packets
-    if (p.packetNumber != previous_packet)
+    if (myData.packetNumber != previous_packet)
     {
-        previous_packet = p.packetNumber;
+        previous_packet = myData.packetNumber;
     }
     else
     {
@@ -37,14 +41,14 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     }
 
     // check for special packet
-    if (p.packetNumber == 0)
+    if (myData.packetNumber == 0)
     {
         SpecialHandler();
         return;
     }
 
-    p.ttl--;
-    if (p.ttl > 0)
+    myData.time_to_live--;
+    if (myData.time_to_live > 0)
     {
         retr = 1;
         _PRIMARY_COUNT++;
@@ -54,23 +58,23 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         hopping = 1;
     }
 
-//    esp_wifi_stop();
+    esp_wifi_stop();
 
     // output stuff ...
     _RSSI_SUM += rssi_display;
-    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, clock_correction);
-    // Serial.printf("%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\n", p.time1, p.dist1, p.time2, p.dist2, p.time3, p.dist3, p.time4, p.dist4);
+    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, myData.time_to_live, rssi_display, myData.packetNumber, clock_correction);
+    // Serial.printf("%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\t%.2f, %.2f\n", myData.time1, myData.dist1, myData.time2, myData.dist2, myData.time3, myData.dist3, myData.time4, myData.dist4);
 
     if ((MISS_COUNT == 0) && (bootCount != 1) && !KEEP_ON)
     {
         // Serial.printf("I will align the clock by %d ms\n", clock_correction);
         if (hopping == 1)
         {
-            esp_sleep_enable_timer_wakeup((period - AFTER_RX - RADIO_READY + clock_correction) * MS_TO_US);
+            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - after_rx_ms - radio_ready_ms + clock_correction) * MS_TO_US);
         }
         else
         {
-            esp_sleep_enable_timer_wakeup((period - AFTER_RX - RADIO_READY + clock_correction) * MS_TO_US);
+            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - after_rx_ms - radio_ready_ms + clock_correction - 2) * MS_TO_US);
         }
     }
 
@@ -93,7 +97,7 @@ void setup()
     // initial output and setup
     if (bootCount == 0)
     { 
-        Serial.printf("rx_pkt\tttl\trssi\ttx_pkt\n", packetReceived, p.ttl, rssi_display, p.packetNumber);
+        Serial.printf("rx_pkt\tttl\trssi\ttx_pkt\n", packetReceived, myData.time_to_live, rssi_display, myData.packetNumber);
     }
     bootCount++;
 
@@ -127,12 +131,12 @@ void setup()
     esp_now_register_recv_cb(OnDataRecv);
 
     // RSSI
-    esp_wifi_set_promiscuous(true);
-    esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
-    Serial.printf("Radio ready at %f ms\n", (micros()-start_time)/1000.0);
+//    esp_wifi_set_promiscuous(true);
+//    esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
+    // Serial.printf("Radio ready at %f ms\n", (micros()-start_time)/1000.0);
 
     // set default sleep time
-    esp_sleep_enable_timer_wakeup((period - RADIO_READY - AFTER_RX) * MS_TO_US);
+    esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - radio_ready_ms - after_rx_ms) * MS_TO_US);
     esp_wifi_start();
 }
 
@@ -170,14 +174,14 @@ void loop()
         MISS_COUNT++;
         if (MISS_COUNT == 1)
         {
-            esp_sleep_enable_timer_wakeup((period - RADIO_READY - 3*radio_on_ms)*MS_TO_US);
+            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS - radio_ready_ms - 3*radio_on_ms)*MS_TO_US);
             _TEMP_DESYNC++;
             Serial.printf("x\n");
         }
         else if (MISS_COUNT == 2)
         {
             // wake up way earlier
-            esp_sleep_enable_timer_wakeup((period / 2) * MS_TO_US);
+            esp_sleep_enable_timer_wakeup((TIME_PERIOD_MS / 2) * MS_TO_US);
             Serial.printf("xx\n");
             KEEP_ON = 1;
             MISS_COUNT = 0;
