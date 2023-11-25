@@ -8,16 +8,17 @@
 #define BOOT_TIME 20 // experimentally found
 #define RADIO_READY 20 // experimentally found
 #define AFTER_RX 105 // experimentally found
-#define GUARD_TIME 30
-#define OVERHEAD 100 // experimentally found
+#define GUARD_TIME 40
+#define OVERHEAD 120 // experimentally found
 #define R 1
 
 RTC_DATA_ATTR unsigned int bootCount = 0;
 RTC_DATA_ATTR uint8_t packetReceived = 0;
+RTC_DATA_ATTR uint8_t previous_packet = 0;
 RTC_DATA_ATTR uint8_t MISS_COUNT = 0;
 RTC_DATA_ATTR uint8_t KEEP_ON = 0;
 RTC_DATA_ATTR uint8_t TURN_OFF = 0;
-RTC_DATA_ATTR uint8_t previous_packet = -1;
+RTC_DATA_ATTR uint8_t AFTER_FDESYNC = 0;
 
 // variables for metrics
 RTC_DATA_ATTR short int _RSSI_SUM = 0;
@@ -25,11 +26,11 @@ RTC_DATA_ATTR unsigned int _TEMP_DESYNC = 0;
 RTC_DATA_ATTR uint8_t _FULL_DESYNC = 0;
 RTC_DATA_ATTR unsigned int _PRIMARY_COUNT = 0;
 
-// flags, clock_correction
+// flags, sleep_correction
 unsigned long start_time = 0;
 unsigned long radio_on_time = 0;
 uint8_t got_packet = 0;
-short int clock_correction = 0;
+short int sleep_correction = 0;
 uint8_t rcv_done = 0;
 uint8_t retr = 0; // pkt needs to be forwarded
 unsigned short int is_repeated = 0;

@@ -15,12 +15,12 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     got_packet = 1;
     rcv_done = 0;
     if (bootCount == 1 && MISS_COUNT != 0){
-        clock_correction = 0;
+        sleep_correction = 0;
     }else if (bootCount > 1 && MISS_COUNT == 0){
         unsigned long delta = micros() - start_time - RADIO_READY*1000 - del*1000; // this is how long the device waited with radio on until it received the beacon
-        clock_correction = int(delta/1000.0 - GUARD_TIME);
-        if (clock_correction > OVERHEAD)
-            clock_correction = 0;
+        sleep_correction = int(delta/1000.0 - GUARD_TIME);
+        if (sleep_correction > OVERHEAD)
+            sleep_correction = 0;
     }
 
     packetReceived++;
@@ -51,7 +51,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 
     // output stuff ...
     _RSSI_SUM += rssi_display;
-    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, clock_correction);
+    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, sleep_correction);
 
     rcv_done = 1;
     KEEP_ON = 0;
@@ -126,7 +126,7 @@ void loop()
     }
 
     // wait for the beacon
-    while ( (bootCount > 1) && ((micros() - start_time) < 2*max_radio_on*MS_TO_US) ){
+    while ( (bootCount > 1) && ((micros() - start_time) < max_radio_on*MS_TO_US) ){
         if (got_packet == 1)
             break;
     }
@@ -143,6 +143,7 @@ void loop()
             KEEP_ON = 1;
             MISS_COUNT = 0;
             _FULL_DESYNC++;
+            AFTER_FDESYNC = 1;
         }
     }else{ // got packet
         MISS_COUNT = 0;
@@ -150,7 +151,11 @@ void loop()
         while (rcv_done == 0){
             delay(0.001);
         }
-
+        if (AFTER_FDESYNC == 1){
+          AFTER_FDESYNC = 2;
+        }else if (AFTER_FDESYNC == 2){
+          AFTER_FDESYNC = 0;
+        }
         // if got packet then retransmit
         if (retr == 1){
             retransmit();
@@ -158,11 +163,20 @@ void loop()
     }
 //    Serial.printf("time since rx: %f ms\n", (micros()-rx_time)/1000);
 //    Serial.printf("time since wake-up: %f ms\n", (micros()-start_time)/1000);
-    if (bootCount > 1){
-        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME + clock_correction));
-        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME + clock_correction) * MS_TO_US);
+    if (bootCount > 1 && AFTER_FDESYNC == 0 && got_packet == 1){ // typical case
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction) * MS_TO_US);
+    }else if (bootCount > 1 && AFTER_FDESYNC == 0 && got_packet == 0){ // missed one
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME - 20));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME - 20) * MS_TO_US);
+    }else if (bootCount > 1 && AFTER_FDESYNC == 1 && got_packet == 1){ // after a desync 
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME) * MS_TO_US);
+    }else if (bootCount > 1 && AFTER_FDESYNC == 0 && got_packet == 0){ // missed 1 
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME - OVERHEAD));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME - OVERHEAD) * MS_TO_US);
     }else{
-        esp_sleep_enable_timer_wakeup((period - RADIO_READY - AFTER_RX) * MS_TO_US);
+        esp_sleep_enable_timer_wakeup((period - RADIO_READY - AFTER_RX + BOOT_TIME) * MS_TO_US);
     }
     Serial.flush();
     esp_deep_sleep_start();
