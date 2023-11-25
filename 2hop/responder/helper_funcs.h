@@ -2,7 +2,7 @@
 #define TIME_PERIOD_MS 5000
 
 #define TOTAL_PKTS 500
-#define HOP_NUM_N 1
+#define HOP_NUM_N 3
 #define RETR_NUM_K 3
 #define TX_DELAY 1
 #define BOOT_TIME 20 // experimentally found
@@ -13,7 +13,7 @@
 #define R 1
 
 RTC_DATA_ATTR unsigned int bootCount = 0;
-RTC_DATA_ATTR uint8_t packetReceived = 0;
+RTC_DATA_ATTR unsigned int packetReceived = 0;
 RTC_DATA_ATTR uint8_t previous_packet = 0;
 RTC_DATA_ATTR uint8_t MISS_COUNT = 0;
 RTC_DATA_ATTR uint8_t KEEP_ON = 0;
@@ -21,7 +21,7 @@ RTC_DATA_ATTR uint8_t TURN_OFF = 0;
 RTC_DATA_ATTR uint8_t AFTER_FDESYNC = 0;
 
 // variables for metrics
-RTC_DATA_ATTR short int _RSSI_SUM = 0;
+RTC_DATA_ATTR int _RSSI_SUM = 0;
 RTC_DATA_ATTR unsigned int _TEMP_DESYNC = 0;
 RTC_DATA_ATTR uint8_t _FULL_DESYNC = 0;
 RTC_DATA_ATTR unsigned int _PRIMARY_COUNT = 0;
@@ -67,26 +67,25 @@ wifi_country_t country = {
 void SpecialHandler(){
   TURN_OFF = 1;
 
-  // the special packet does not count
   packetReceived--;
-  bootCount--;
-  int avg_rssi = 0;
-  float succ_ratio = 0;
+  float avg_rssi = 0.0;
+  float succ_ratio = 0.0;
 
   p.ttl--;
   if (p.ttl > 0)
     retr = 1;
 
-  if (packetReceived != 0)
-    avg_rssi = int(_RSSI_SUM / packetReceived);
-  int sum = TOTAL_PKTS - 2;
+  if (packetReceived == 0)
+    packetReceived = 1;
+  avg_rssi = (float)_RSSI_SUM / (float)packetReceived;
+  int sum = TOTAL_PKTS;
 
   if (sum != 0){
     succ_ratio = (float)(packetReceived) / (float)(sum);
   }
 
   Serial.printf("\n--------- RESULTS --------------\n");
-  Serial.printf("Avg RSSI: %d\tTemp desyncs: %d\t Complete desyncs: %d\n", avg_rssi, _TEMP_DESYNC, _FULL_DESYNC);
+  Serial.printf("Avg RSSI: %f\tTemp desyncs: %d\t Complete desyncs: %d\n", avg_rssi, _TEMP_DESYNC, _FULL_DESYNC);
   Serial.printf("TTL 1s (Primary): %d\n", _PRIMARY_COUNT);
 
 
@@ -98,8 +97,10 @@ void SpecialHandler(){
 
 void retransmit(){
   esp_wifi_start();
-  float r = rand()/32768;
-  delay(r);
+  uint32_t r = esp_random();
+  if (r < 0)
+      r *= -1;
+  delay(r/4294967295);
   for (int i = 0; i < RETR_NUM_K; i++){
     esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&p, sizeof(p));
     delay(1);

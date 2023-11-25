@@ -10,7 +10,7 @@
 #define SPECIAL_COUNT 10
 
 #define RETR_NUM_K 3
-#define HOP_NUM_N 1
+#define HOP_NUM_N 3
 #define TX_DELAY 1
 
 uint8_t broadcastAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };

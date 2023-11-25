@@ -14,17 +14,17 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     Serial.printf("Received after %f ms\n", (rx_time-start_time)/1000.0); // it must be RADIO_READY+GUARD_TIME
     got_packet = 1;
     rcv_done = 0;
+    memcpy(&p, incomingData, sizeof(p));
     if (bootCount == 1 && MISS_COUNT != 0){
         sleep_correction = 0;
     }else if (bootCount > 1 && MISS_COUNT == 0){
         unsigned long delta = micros() - start_time - RADIO_READY*1000 - del*1000; // this is how long the device waited with radio on until it received the beacon
-        sleep_correction = int(delta/1000.0 - GUARD_TIME);
-        if (sleep_correction > OVERHEAD)
+        sleep_correction = int(delta/1000.0 - GUARD_TIME - OVERHEAD*(HOP_NUM_N-p.ttl)); // that might be tricky to sync with HOP>1
+        if (sleep_correction > OVERHEAD*(HOP_NUM_N-p.ttl+1))
             sleep_correction = 0;
     }
 
     packetReceived++;
-    memcpy(&p, incomingData, sizeof(p));
 
     // repeated packets
     if (p.packetNumber != previous_packet){
