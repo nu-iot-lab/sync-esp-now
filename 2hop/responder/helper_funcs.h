@@ -2,7 +2,7 @@
 #define TIME_PERIOD_MS 5000
 
 #define TOTAL_PKTS 500
-#define HOP_NUM_N 3
+#define HOP_NUM_N 1
 #define RETR_NUM_K 3
 #define TX_DELAY 1
 #define BOOT_TIME 20 // experimentally found
@@ -11,6 +11,7 @@
 #define GUARD_TIME 40
 #define OVERHEAD 120 // experimentally found
 #define R 1
+#define IEEE80211_OVERHEAD 43
 
 RTC_DATA_ATTR unsigned int bootCount = 0;
 RTC_DATA_ATTR unsigned int packetReceived = 0;
@@ -52,7 +53,7 @@ struct packet {
 };
 
 packet p;
-float del = RETR_NUM_K * sizeof(p) * 8.0 / 250 + (RETR_NUM_K-1) * TX_DELAY * 1.0;
+float del = RETR_NUM_K * (sizeof(p)+IEEE80211_OVERHEAD) * 8.0 / 250.0 + (RETR_NUM_K-1) * TX_DELAY * 1.0;
 float period = TIME_PERIOD_MS - del;
 unsigned short int max_radio_on = GUARD_TIME + HOP_NUM_N * (del + OVERHEAD);
 
