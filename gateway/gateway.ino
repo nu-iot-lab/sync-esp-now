@@ -12,6 +12,7 @@
 #define RETR_NUM_K 3
 #define HOP_NUM_N 1
 #define TX_DELAY 1
+#define IEEE80211_OVERHEAD 43
 
 uint8_t broadcastAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
@@ -97,7 +98,7 @@ void loop() {
     }
 
     // waiting time: period - propagation time - time between transmissions
-    float del = RETR_NUM_K*sizeof(p)*8.0/250 + RETR_NUM_K*TX_DELAY*1.0;
+    float del = RETR_NUM_K*(sizeof(p)+IEEE80211_OVERHEAD)*8.0/250 + RETR_NUM_K*TX_DELAY*1.0;
     delay(TIME_PERIOD * S_TO_MS - del);
 
     p.packetNumber++;

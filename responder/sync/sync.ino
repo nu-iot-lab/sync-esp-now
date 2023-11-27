@@ -62,7 +62,6 @@ void setup()
     Serial.begin(115200);
     start_time = micros();
     Serial.printf("---\n");
-    Serial.printf("%f\n", del);
 
     // special packet check
     if (TURN_OFF)
@@ -165,8 +164,8 @@ void loop()
 //    Serial.printf("time since rx: %f ms\n", (micros()-rx_time)/1000);
 //    Serial.printf("time since wake-up: %f ms\n", (micros()-start_time)/1000);
     if (bootCount > 1 && AFTER_FDESYNC == 0 && got_packet == 1){ // typical case
-        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction - 25));
-        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction - 25) * MS_TO_US);
+        Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction));
+        esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME + sleep_correction) * MS_TO_US);
     }else if (bootCount > 1 && AFTER_FDESYNC == 0 && got_packet == 0){ // missed one
         Serial.printf("sleep time: %f ms\n", (period - (micros()-start_time)/MS_TO_US - BOOT_TIME - 20));
         esp_sleep_enable_timer_wakeup((period - (micros()-start_time)/MS_TO_US - BOOT_TIME - 20) * MS_TO_US);

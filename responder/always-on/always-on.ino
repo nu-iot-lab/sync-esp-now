@@ -5,6 +5,7 @@
 
 #define TOTAL_TX_COUNT 500
 #define RETR_NUM_K 1
+// #define HOP_NUM_N 1 // not needed in always-on
 
 int packetReceived = 0;
 uint8_t TURN_OFF = 0;
@@ -31,7 +32,7 @@ struct packet {
   float time1;
   char lat;
   char lon;
-  unsigned int CRC;
+  unsigned int CRC; // optional
 };
 
 packet p;
@@ -46,7 +47,6 @@ wifi_country_t country = {
 };
 
 void retransmit(){
-  esp_wifi_start();
   uint32_t r = esp_random();
   if (r < 0)
       r *= -1;
@@ -95,6 +95,7 @@ void SpecialHandler() {
 
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+//  esp_wifi_stop();
   rcv_done = 0;
   retr = 0;
   // Serial.printf("%lu\n", millis());

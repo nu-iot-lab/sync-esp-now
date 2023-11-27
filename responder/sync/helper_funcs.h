@@ -4,8 +4,9 @@
 #define TOTAL_PKTS 500
 #define HOP_NUM_N 1
 #define RETR_NUM_K 3
+
 #define TX_DELAY 1
-#define BOOT_TIME 20 // experimentally found
+#define BOOT_TIME 25 // experimentally found
 #define RADIO_READY 20 // experimentally found
 #define AFTER_RX 105 // experimentally found
 #define GUARD_TIME 40
@@ -49,7 +50,7 @@ struct packet {
   float time1;
   char lat;
   char lon;
-  unsigned int CRC;
+  unsigned int CRC; // optional
 };
 
 packet p;
