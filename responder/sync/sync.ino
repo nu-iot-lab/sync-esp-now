@@ -28,7 +28,6 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         previous_packet = p.packetNumber;
         packetReceived++;
     }else{
-        packetReceived--;
         is_repeated = 1;
         return;
     }

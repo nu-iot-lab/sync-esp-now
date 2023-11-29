@@ -15,8 +15,8 @@
 #define IEEE80211_OVERHEAD 43
 
 RTC_DATA_ATTR unsigned int bootCount = 0;
-RTC_DATA_ATTR unsigned int packetReceived = 0;
-RTC_DATA_ATTR unsigned int previous_packet = 0;
+RTC_DATA_ATTR unsigned short packetReceived = 0;
+RTC_DATA_ATTR unsigned short previous_packet = 0;
 RTC_DATA_ATTR uint8_t MISS_COUNT = 0;
 RTC_DATA_ATTR uint8_t KEEP_ON = 0;
 RTC_DATA_ATTR uint8_t TURN_OFF = 0;
@@ -24,9 +24,9 @@ RTC_DATA_ATTR uint8_t AFTER_FDESYNC = 0;
 
 // variables for metrics
 RTC_DATA_ATTR int _RSSI_SUM = 0;
-RTC_DATA_ATTR unsigned int _TEMP_DESYNC = 0;
+RTC_DATA_ATTR unsigned short int _TEMP_DESYNC = 0;
 RTC_DATA_ATTR uint8_t _FULL_DESYNC = 0;
-RTC_DATA_ATTR unsigned int _PRIMARY_COUNT = 0;
+RTC_DATA_ATTR unsigned short int _PRIMARY_COUNT = 0;
 
 // flags, sleep_correction
 unsigned long start_time = 0;
@@ -35,7 +35,7 @@ uint8_t got_packet = 0;
 short int sleep_correction = 0;
 uint8_t rcv_done = 0;
 uint8_t retr = 0; // pkt needs to be forwarded
-unsigned short int is_repeated = 0;
+uint8_t is_repeated = 0;
 unsigned int rx_time = 0;
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -43,7 +43,7 @@ esp_now_peer_info_t slaveInfo;
 
 // Define a data structure
 struct packet {
-  unsigned int packetNumber;
+  unsigned short int packetNumber;
   uint8_t ttl;
   uint8_t id;
   float dist1;
