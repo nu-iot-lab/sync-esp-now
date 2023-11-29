@@ -17,7 +17,7 @@ int _RETR_SUM = 0;
 // flags
 uint8_t rcv_done = 0;
 uint8_t retr = 0;
-uint8_t previous_packet = -1;
+int previous_packet = -1;
 uint8_t end = 0;
 
 uint8_t broadcastAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };

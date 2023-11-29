@@ -2,7 +2,7 @@
 #define TIME_PERIOD_MS 5000
 
 #define TOTAL_PKTS 500
-#define HOP_NUM_N 1
+#define HOP_NUM_N 3
 #define RETR_NUM_K 3
 
 #define TX_DELAY 1
@@ -102,6 +102,7 @@ void retransmit(){
   uint32_t r = esp_random();
   if (r < 0)
       r *= -1;
+  //Serial.printf("%f\n", (float)r/4294967295.0);
   delay(r/4294967295);
   for (int i = 0; i < RETR_NUM_K; i++){
     esp_err_t result = esp_now_send(slaveInfo.peer_addr, (uint8_t *)&p, sizeof(p));
