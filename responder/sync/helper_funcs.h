@@ -2,8 +2,8 @@
 #define TIME_PERIOD_MS 5000
 
 #define TOTAL_PKTS 500
-#define HOP_NUM_N 3
-#define RETR_NUM_K 3
+#define HOP_NUM_N 2
+#define RETR_NUM_K 1
 
 #define TX_DELAY 1
 #define BOOT_TIME 25 // experimentally found
@@ -98,7 +98,7 @@ void SpecialHandler(){
 }
 
 void retransmit(){
-  esp_wifi_start();
+//  esp_wifi_start();
   uint32_t r = esp_random();
   if (r < 0)
       r *= -1;

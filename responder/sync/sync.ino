@@ -9,10 +9,9 @@
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-    esp_wifi_stop();
+//    esp_wifi_stop();
     rx_time = micros();
     Serial.printf("Received after %f ms\n", (rx_time-start_time)/1000.0); // it must be RADIO_READY+GUARD_TIME
-    got_packet = 1;
     rcv_done = 0;
     memcpy(&p, incomingData, sizeof(p));
     if (bootCount == 1 && MISS_COUNT != 0){
@@ -31,8 +30,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         previous_packet = p.packetNumber;
     }else{
         packetReceived--;
-//        got_packet = 0;
         is_repeated = 1;
+        Serial.printf("koko\n");
         return;
     }
 
@@ -42,17 +41,18 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         return;
     }
 
+    // output stuff ...
+    _RSSI_SUM += rssi_display;
+    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, sleep_correction);
+
     // reduce hop count
     p.ttl--;
     if (p.ttl > 0){
         retr = 1;
         _PRIMARY_COUNT++;
     }
-
-    // output stuff ...
-    _RSSI_SUM += rssi_display;
-    Serial.printf("%d\t%i\t%i\t%i\t%i\n", packetReceived, p.ttl, rssi_display, p.packetNumber, sleep_correction);
-
+    
+    got_packet = 1;
     rcv_done = 1;
     KEEP_ON = 0;
 }
@@ -118,6 +118,7 @@ void setup()
 
 void loop()
 {
+    got_packet = 0;
     // wait indefinetly (this is for the first time the device boots up)
     if (bootCount == 1 || KEEP_ON){
         while (got_packet == 0){
