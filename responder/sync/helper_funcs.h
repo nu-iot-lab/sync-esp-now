@@ -16,7 +16,7 @@
 
 RTC_DATA_ATTR unsigned int bootCount = 0;
 RTC_DATA_ATTR unsigned int packetReceived = 0;
-RTC_DATA_ATTR uint8_t previous_packet = 0;
+RTC_DATA_ATTR unsigned int previous_packet = 0;
 RTC_DATA_ATTR uint8_t MISS_COUNT = 0;
 RTC_DATA_ATTR uint8_t KEEP_ON = 0;
 RTC_DATA_ATTR uint8_t TURN_OFF = 0;
@@ -43,7 +43,7 @@ esp_now_peer_info_t slaveInfo;
 
 // Define a data structure
 struct packet {
-  unsigned short int packetNumber;
+  unsigned int packetNumber;
   uint8_t ttl;
   uint8_t id;
   float dist1;

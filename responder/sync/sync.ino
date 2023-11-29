@@ -23,15 +23,13 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
             sleep_correction = 0;
     }
 
-    packetReceived++;
-
     // repeated packets
     if (p.packetNumber != previous_packet){
         previous_packet = p.packetNumber;
+        packetReceived++;
     }else{
         packetReceived--;
         is_repeated = 1;
-        Serial.printf("koko\n");
         return;
     }
 
