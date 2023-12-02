@@ -4,7 +4,7 @@
 #include "rssi.h"
 
 #define TOTAL_TX_COUNT 500
-#define RETR_NUM_K 1
+#define RETR_NUM_K 3
 // #define HOP_NUM_N 1 // not needed in always-on
 
 int packetReceived = 0;
